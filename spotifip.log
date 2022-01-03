@@ -1,0 +1,5 @@
+{"level":"error","ts":"2022-01-03T11:16:24+01:00","caller":"spotifip/main.go:120","msg":"GET Spotify search: no results for: Deep shit (part 1 & part 2) Kruder & Dorfmeister","stacktrace":"main.main\n\t/home/antoine.gelloz/go/src/private/spotifip/main.go:120\nruntime.main\n\t/usr/local/go/src/runtime/proc.go:255"}
+{"level":"info","ts":"2022-01-03T11:20:47+01:00","caller":"spotifip/main.go:131","msg":"OK","search":"Bicycle Bc Unidos","name":"Bicycle (feat. Shungudzo)","artists":"BC Unidos,Shungudzo","id":"6xzmWTAOYKYO2DIP9M3xrd"}
+{"level":"info","ts":"2022-01-03T11:20:47+01:00","caller":"spotifip/main.go:195","msg":"POST Supabase response: "}
+{"level":"info","ts":"2022-01-03T11:20:59+01:00","caller":"spotifip/main.go:131","msg":"OK","search":"Bicycle Bc Unidos","name":"Bicycle (feat. Shungudzo)","artists":"BC Unidos,Shungudzo","id":"6xzmWTAOYKYO2DIP9M3xrd"}
+{"level":"info","ts":"2022-01-03T11:20:59+01:00","caller":"spotifip/main.go:169","msg":"current track 6xzmWTAOYKYO2DIP9M3xrd already inserted"}
