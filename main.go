@@ -26,8 +26,9 @@ func getEnvVar(key string) string {
 
 func main() {
 	if err := godotenv.Load(); err != nil {
-		logger.Get().Errorf("couldn't load .env file: %s", err)
-		return
+		err = fmt.Errorf("couldn't load .env file: %w", err)
+		logger.Get().Errorf(err.Error())
+		panic(err)
 	}
 
 	spotifyClientID := getEnvVar("SPOTIFY_CLIENT_ID")

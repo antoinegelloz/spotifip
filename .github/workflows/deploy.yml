@@ -14,4 +14,4 @@ jobs:
         port: ${{ secrets.PORT }}
         key: ${{ secrets.KEY }}
         source: "spotifip"
-        target: "spotifip"
+        target: "/home/spotifip"
