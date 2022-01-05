@@ -126,9 +126,10 @@ func main() {
 	if len(s.Tracks.Items) == 0 {
 		logger.Get().Infow("GET Spotify search: no results",
 			"query", searchQuery)
-		if err = postSupabase(searchQuery, "", []string{}); err != nil {
-			logger.Get().Errorf("POST Supabase: %s", err)
-			return
+		if lastTrack.Name != searchQuery {
+			if err = postSupabase(searchQuery, "", []string{}); err != nil {
+				logger.Get().Errorf("POST Supabase: %s", err)
+			}
 		}
 		return
 	}
