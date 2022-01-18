@@ -14,6 +14,10 @@ import (
 	"github.com/joho/godotenv"
 )
 
+const (
+	ignore1 = "Le direct De Air à Soulwax, de Superpoze à Tosca, gardez le kick avec notre sélection électronique"
+)
+
 var (
 	httpClient           *resty.Client
 	spotifyClientID      string
@@ -62,6 +66,10 @@ func main() {
 
 	if f.Now.FirstLine == "" {
 		logger.Get().Errorf("invalid GET Fip Electro response: empty first line: %+v", f.Now)
+		return
+	}
+
+	if f.Now.FirstLine == ignore1 {
 		return
 	}
 
