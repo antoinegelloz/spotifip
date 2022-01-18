@@ -15,7 +15,8 @@ import (
 )
 
 const (
-	ignore1 = "Le direct De Air à Soulwax, de Superpoze à Tosca, gardez le kick avec notre sélection électronique"
+	ignore1 = "Le direct"
+	ignore2 = "De Air à Soulwax, de Superpoze à Tosca, gardez le kick avec notre sélection électronique"
 )
 
 var (
@@ -69,7 +70,7 @@ func main() {
 		return
 	}
 
-	if f.Now.FirstLine == ignore1 {
+	if f.Now.FirstLine == ignore1 && f.Now.SecondLine == ignore2 {
 		return
 	}
 
