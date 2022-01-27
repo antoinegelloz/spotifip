@@ -4,7 +4,6 @@ import (
 	"sync"
 
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 )
 
 var (
@@ -21,8 +20,7 @@ func Get() *zap.SugaredLogger {
 }
 
 func NewSugaredLogger() *zap.SugaredLogger {
-	config := zap.NewProductionConfig()
-	config.EncoderConfig.EncodeTime = zapcore.RFC3339TimeEncoder
+	config := zap.NewDevelopmentConfig()
 	config.OutputPaths = []string{"spotifip.log"}
 	logger, _ := config.Build()
 	defer func() {
