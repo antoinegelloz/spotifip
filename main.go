@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/antoinegelloz/spotifip/logger"
@@ -97,24 +98,27 @@ func main() {
 		return
 	}
 
-	lastTrack, err := getSupabaseLastTrack()
+	lastTrack, err := getSBLastTrack()
 	if err != nil {
 		logger.Get().Errorf("GET Supabase last track: %s", err)
 		return
 	}
 
-	searchQuery := f.Now.FirstLine
+	searchQuery := "track:" + f.Now.FirstLine
 	if f.Now.SecondLine != "" {
-		searchQuery += " " + f.Now.SecondLine
+		searchQuery += " artist:" + f.Now.SecondLine
 	}
 
-	resp, err = httpClient.R().EnableTrace().
+	req := httpClient.R().EnableTrace().
 		SetHeader("Authorization",
 			fmt.Sprintf("%s %s", c.TokenType, c.AccessToken)).
 		SetQueryParam("type", "track").
 		SetQueryParam("include_external", "audio").
 		SetQueryParam("q", searchQuery).
-		SetResult(&spotify.Search{}).
+		SetQueryParam("limit", "1").
+		SetResult(&spotify.Search{})
+
+	resp, err = req.
 		Get("https://api.spotify.com/v1/search")
 	if err != nil {
 		logger.Get().Errorf("GET Spotify search: %s", err)
@@ -122,7 +126,7 @@ func main() {
 	}
 
 	if resp.IsError() {
-		logger.Get().Errorf("GET Spotify search: %s", resp.String())
+		logger.Get().Errorf("GET Spotify search IsError %d: %+v", resp.StatusCode(), resp.Error())
 		return
 	}
 
@@ -136,7 +140,8 @@ func main() {
 		logger.Get().Infow("GET Spotify search: no results",
 			"query", searchQuery)
 		if lastTrack.Name != searchQuery {
-			if err = postSupabase(searchQuery, "", []string{}); err != nil {
+			if err = postSB(fmt.Sprintf(
+				"%s %s", f.Now.FirstLine, f.Now.SecondLine), "", []string{}, false); err != nil {
 				logger.Get().Errorf("POST Supabase: %s", err)
 			}
 		}
@@ -146,6 +151,11 @@ func main() {
 	currTrack := s.Tracks.Items[0]
 	if currTrack.Name == lastTrack.Name {
 		logger.Get().Infof("current track %s (%s) already inserted", currTrack.Name, currTrack.ID)
+		if lastTrack.Favorite {
+			if err = setSBFavorite(currTrack.ID); err != nil {
+				logger.Get().Errorf("Set favorite: %s", err)
+			}
+		}
 		return
 	}
 
@@ -154,7 +164,26 @@ func main() {
 		artists = append(artists, artist.Name)
 	}
 
-	if err = postSupabase(currTrack.Name, currTrack.ID, artists); err != nil {
+	insertedTracks, err := getSBInsertedTracks(currTrack.ID)
+	if err != nil {
+		logger.Get().Errorf("GET Supabase inserted tracks: %s", err)
+		return
+	}
+
+	favorite := false
+	for _, t := range insertedTracks {
+		if t.Favorite {
+			favorite = true
+		}
+		if favorite && !t.Favorite {
+			if err = setSBFavorite(t.SpotifyID); err != nil {
+				logger.Get().Errorf("Set favorite: %s", err)
+			}
+			break
+		}
+	}
+
+	if err = postSB(currTrack.Name, currTrack.ID, artists, favorite); err != nil {
 		logger.Get().Errorf("POST Supabase: %s", err)
 		return
 	}
@@ -166,7 +195,7 @@ func main() {
 		"id", currTrack.ID)
 }
 
-func getSupabaseLastTrack() (supabase.Track, error) {
+func getSBLastTrack() (supabase.Track, error) {
 	resp, err := httpClient.R().EnableTrace().
 		SetHeaders(map[string]string{
 			"apikey":        sbSpotifipServiceKey,
@@ -182,7 +211,7 @@ func getSupabaseLastTrack() (supabase.Track, error) {
 	}
 
 	if resp.IsError() {
-		return supabase.Track{}, fmt.Errorf("response: %s", resp.String())
+		return supabase.Track{}, fmt.Errorf("IsError %d: %+v", resp.StatusCode(), resp.Error())
 	}
 
 	lastTrack, ok := resp.Result().(*[]supabase.Track)
@@ -201,17 +230,49 @@ func getSupabaseLastTrack() (supabase.Track, error) {
 	return (*lastTrack)[0], nil
 }
 
-func postSupabase(name, id string, artists []string) error {
+func getSBInsertedTracks(spotifyID string) ([]supabase.Track, error) {
+	resp, err := httpClient.R().EnableTrace().
+		SetHeaders(map[string]string{
+			"apikey":        sbSpotifipServiceKey,
+			"Authorization": "Bearer " + sbSpotifipServiceKey,
+		}).
+		SetResult(&[]supabase.Track{}).
+		Get(fmt.Sprintf("%s%s?select=*&spotify_id=eq.%s",
+			sbSpotifipURL+sbAPIBaseURL, sbFipElectroDB, spotifyID))
+	if err != nil {
+		return []supabase.Track{}, err
+	}
+
+	if resp.IsError() {
+		return []supabase.Track{}, fmt.Errorf("IsError %d: %+v", resp.StatusCode(), resp.Error())
+	}
+
+	tracks, ok := resp.Result().(*[]supabase.Track)
+	if !ok {
+		return []supabase.Track{}, fmt.Errorf("invalid result: %+v", resp.Result())
+	}
+
+	return *tracks, nil
+}
+
+func postSB(name, spotifyID string, artists []string, favorite bool) error {
+	type post struct {
+		Name      string   `json:"name"`
+		Artists   []string `json:"artists"`
+		SpotifyID string   `json:"spotify_id"`
+		Favorite  bool     `json:"favorite"`
+	}
 	resp, err := httpClient.R().EnableTrace().
 		SetHeaders(map[string]string{
 			"apikey":        sbSpotifipServiceKey,
 			"Authorization": "Bearer " + sbSpotifipServiceKey,
 			"Content-Type":  "application/json",
 		}).
-		SetBody(supabase.Track{
+		SetBody(post{
 			Name:      name,
 			Artists:   artists,
-			SpotifyID: id,
+			SpotifyID: spotifyID,
+			Favorite:  favorite,
 		}).
 		Post(fmt.Sprintf("%s%s", sbSpotifipURL+sbAPIBaseURL, sbFipElectroDB))
 	if err != nil {
@@ -219,9 +280,52 @@ func postSupabase(name, id string, artists []string) error {
 	}
 
 	if resp.IsError() {
-		return fmt.Errorf("response: %s", resp.String())
+		return fmt.Errorf("IsError %d: %+v", resp.StatusCode(), resp.Error())
 	}
 
+	return nil
+}
+
+func setSBFavorite(spotifyID string) error {
+	type fav struct {
+		Favorite bool `json:"favorite"`
+	}
+	resp, err := httpClient.R().EnableTrace().
+		SetHeaders(map[string]string{
+			"apikey":        sbSpotifipServiceKey,
+			"Authorization": "Bearer " + sbSpotifipServiceKey,
+			"Content-Type":  "application/json",
+			"Prefer":        "return=minimal",
+		}).
+		SetBody(fav{
+			Favorite: true,
+		}).
+		Patch(fmt.Sprintf("%s%s?spotify_id=eq.%s",
+			sbSpotifipURL+sbAPIBaseURL, sbFipElectroDB, spotifyID))
+	if err != nil {
+		return err
+	}
+
+	if resp.IsError() {
+		return fmt.Errorf("IsError %d: %+v", resp.StatusCode(), resp.Error())
+	}
+
+	contentRangeSlice := resp.RawResponse.Header.Values("Content-Range")
+	if len(contentRangeSlice) != 1 {
+		return fmt.Errorf("too big content range slice: %+v", contentRangeSlice)
+	}
+	contentRange := contentRangeSlice[0]
+	if len(contentRange) < 5 {
+		return fmt.Errorf("too small content range: %s", contentRange)
+	}
+
+	l, err := strconv.Atoi(
+		contentRange[2 : len(contentRange)-2])
+	if err != nil {
+		return fmt.Errorf("strconv.Atoi: %w", err)
+	}
+
+	logger.Get().Infof("%d tracks with Spotify ID %s favorited", l+1, spotifyID)
 	return nil
 }
 
