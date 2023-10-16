@@ -8,27 +8,11 @@ import (
 	"strings"
 
 	"github.com/antoinegelloz/spotifip/logger"
-	"github.com/antoinegelloz/spotifip/models/fip"
-	"github.com/antoinegelloz/spotifip/models/spotify"
-	"github.com/antoinegelloz/spotifip/models/supabase"
+	"github.com/antoinegelloz/spotifip/model/fip"
+	"github.com/antoinegelloz/spotifip/model/spotify"
+	"github.com/antoinegelloz/spotifip/model/supabase"
 	"github.com/go-resty/resty/v2"
 	"github.com/joho/godotenv"
-)
-
-const (
-	ignore1 = "Le direct"
-	ignore2 = "De Air à Soulwax, de Superpoze à Tosca, gardez le kick avec notre sélection électronique"
-)
-
-var (
-	httpClient           *resty.Client
-	spotifyClientID      string
-	spotifyClientSecret  string
-	fipElectroURL        string
-	sbSpotifipURL        string
-	sbSpotifipServiceKey string
-	sbAPIBaseURL         string
-	sbFipElectroDB       string
 )
 
 func main() {
@@ -38,16 +22,8 @@ func main() {
 		panic(err)
 	}
 
-	httpClient = resty.New()
-	spotifyClientID = getEnvVar("SPOTIFY_CLIENT_ID")
-	spotifyClientSecret = getEnvVar("SPOTIFY_CLIENT_SECRET")
-	fipElectroURL = getEnvVar("FIP_ELECTRO_URL")
-	sbSpotifipURL = getEnvVar("SUPABASE_SPOTIFIP_URL")
-	sbSpotifipServiceKey = getEnvVar("SUPABASE_SPOTIFIP_SERVICE_KEY")
-	sbAPIBaseURL = getEnvVar("SUPABASE_API_BASE_URL")
-	sbFipElectroDB = getEnvVar("SUPABASE_FIP_ELECTRO_DB")
-
-	resp, err := httpClient.R().EnableTrace().
+	fipElectroURL := getEnvVar("FIP_ELECTRO_URL")
+	resp, err := resty.New().R().EnableTrace().
 		SetResult(&fip.Fip{}).
 		Get(fipElectroURL)
 	if err != nil {
@@ -71,11 +47,14 @@ func main() {
 		return
 	}
 
-	if f.Now.FirstLine == ignore1 && f.Now.SecondLine == ignore2 {
+	if f.Now.FirstLine == "Le direct" &&
+		f.Now.SecondLine == "De Air à Soulwax, de Superpoze à Tosca, gardez le kick avec notre sélection électronique" {
 		return
 	}
 
-	resp, err = httpClient.R().EnableTrace().
+	spotifyClientID := getEnvVar("SPOTIFY_CLIENT_ID")
+	spotifyClientSecret := getEnvVar("SPOTIFY_CLIENT_SECRET")
+	resp, err = resty.New().R().EnableTrace().
 		SetHeader("Authorization",
 			"Basic "+base64.StdEncoding.EncodeToString(
 				[]byte(spotifyClientID+":"+spotifyClientSecret))).
@@ -98,7 +77,11 @@ func main() {
 		return
 	}
 
-	lastTrack, err := getSBLastTrack()
+	sbKey := getEnvVar("SUPABASE_SPOTIFIP_SERVICE_KEY")
+	sbSpotifipURL := getEnvVar("SUPABASE_SPOTIFIP_URL")
+	sbAPIBaseURL := getEnvVar("SUPABASE_API_BASE_URL")
+	sbURL := sbSpotifipURL + sbAPIBaseURL
+	lastTrack, err := getSBLastTrack(sbKey, sbURL)
 	if err != nil {
 		logger.Get().Errorf("GET Supabase last track: %s", err)
 		return
@@ -109,7 +92,7 @@ func main() {
 		searchQuery += " artist:" + f.Now.SecondLine
 	}
 
-	req := httpClient.R().EnableTrace().
+	req := resty.New().R().EnableTrace().
 		SetHeader("Authorization",
 			fmt.Sprintf("%s %s", c.TokenType, c.AccessToken)).
 		SetQueryParam("type", "track").
@@ -126,7 +109,7 @@ func main() {
 	}
 
 	if resp.IsError() {
-		logger.Get().Errorf("GET Spotify search IsError %d: %+v", resp.StatusCode(), resp.Error())
+		logger.Get().Errorf("GET Spotify search: resty.Response.IsError: code %d: %+v", resp.StatusCode(), resp.Error())
 		return
 	}
 
@@ -140,8 +123,10 @@ func main() {
 		logger.Get().Infow("GET Spotify search: no results",
 			"query", searchQuery)
 		if lastTrack.Name != searchQuery {
-			if err = postSB(fmt.Sprintf(
-				"%s %s", f.Now.FirstLine, f.Now.SecondLine), "", []string{}, false); err != nil {
+			if err = postToSB(sbKey, sbURL,
+				fmt.Sprintf("%s %s",
+					f.Now.FirstLine, f.Now.SecondLine),
+				"", []string{}, false); err != nil {
 				logger.Get().Errorf("POST Supabase: %s", err)
 			}
 		}
@@ -152,7 +137,7 @@ func main() {
 	if currTrack.Name == lastTrack.Name {
 		logger.Get().Infof("current track %s (%s) already inserted", currTrack.Name, currTrack.ID)
 		if lastTrack.Favorite {
-			if err = setSBFavorite(currTrack.ID); err != nil {
+			if err = setSBFavorite(sbKey, sbURL, currTrack.ID); err != nil {
 				logger.Get().Errorf("Set favorite: %s", err)
 			}
 		}
@@ -164,7 +149,8 @@ func main() {
 		artists = append(artists, artist.Name)
 	}
 
-	insertedTracks, err := getSBInsertedTracks(currTrack.ID)
+	insertedTracks, err := getSBInsertedTracksByID(
+		sbKey, sbSpotifipURL+sbAPIBaseURL, currTrack.ID)
 	if err != nil {
 		logger.Get().Errorf("GET Supabase inserted tracks: %s", err)
 		return
@@ -176,15 +162,16 @@ func main() {
 			favorite = true
 		}
 		if favorite && !t.Favorite {
-			if err = setSBFavorite(t.SpotifyID); err != nil {
+			if err = setSBFavorite(sbKey, sbURL, t.SpotifyID); err != nil {
 				logger.Get().Errorf("Set favorite: %s", err)
 			}
 			break
 		}
 	}
 
-	if err = postSB(currTrack.Name, currTrack.ID, artists, favorite); err != nil {
-		logger.Get().Errorf("POST Supabase: %s", err)
+	if err = postToSB(sbKey, sbURL,
+		currTrack.Name, currTrack.ID, artists, favorite); err != nil {
+		logger.Get().Errorf("POST to Supabase: %s", err)
 		return
 	}
 
@@ -195,17 +182,18 @@ func main() {
 		"id", currTrack.ID)
 }
 
-func getSBLastTrack() (supabase.Track, error) {
+func getSBLastTrack(sbKey, sbURL string) (supabase.Track, error) {
+	httpClient := resty.New()
 	resp, err := httpClient.R().EnableTrace().
 		SetHeaders(map[string]string{
-			"apikey":        sbSpotifipServiceKey,
-			"Authorization": "Bearer " + sbSpotifipServiceKey,
+			"apikey":        sbKey,
+			"Authorization": "Bearer " + sbKey,
 			"Range-Unit":    "items",
 			"Range":         "0-0",
 		}).
 		SetResult(&[]supabase.Track{}).
-		Get(fmt.Sprintf("%s%s?select=*&order=id.desc",
-			sbSpotifipURL+sbAPIBaseURL, sbFipElectroDB))
+		Get(fmt.Sprintf("%s/fip_electro?select=*&order=id.desc",
+			sbURL))
 	if err != nil {
 		return supabase.Track{}, err
 	}
@@ -230,15 +218,16 @@ func getSBLastTrack() (supabase.Track, error) {
 	return (*lastTrack)[0], nil
 }
 
-func getSBInsertedTracks(spotifyID string) ([]supabase.Track, error) {
+func getSBInsertedTracksByID(sbKey, sbURL, spotifyID string) ([]supabase.Track, error) {
+	httpClient := resty.New()
 	resp, err := httpClient.R().EnableTrace().
 		SetHeaders(map[string]string{
-			"apikey":        sbSpotifipServiceKey,
-			"Authorization": "Bearer " + sbSpotifipServiceKey,
+			"apikey":        sbKey,
+			"Authorization": "Bearer " + sbKey,
 		}).
 		SetResult(&[]supabase.Track{}).
-		Get(fmt.Sprintf("%s%s?select=*&spotify_id=eq.%s",
-			sbSpotifipURL+sbAPIBaseURL, sbFipElectroDB, spotifyID))
+		Get(fmt.Sprintf("%s/fip_electro?select=*&spotify_id=eq.%s",
+			sbURL, spotifyID))
 	if err != nil {
 		return []supabase.Track{}, err
 	}
@@ -255,17 +244,18 @@ func getSBInsertedTracks(spotifyID string) ([]supabase.Track, error) {
 	return *tracks, nil
 }
 
-func postSB(name, spotifyID string, artists []string, favorite bool) error {
+func postToSB(sbKey, sbURL, name, spotifyID string, artists []string, favorite bool) error {
 	type post struct {
 		Name      string   `json:"name"`
 		Artists   []string `json:"artists"`
 		SpotifyID string   `json:"spotify_id"`
 		Favorite  bool     `json:"favorite"`
 	}
+	httpClient := resty.New()
 	resp, err := httpClient.R().EnableTrace().
 		SetHeaders(map[string]string{
-			"apikey":        sbSpotifipServiceKey,
-			"Authorization": "Bearer " + sbSpotifipServiceKey,
+			"apikey":        sbKey,
+			"Authorization": "Bearer " + sbKey,
 			"Content-Type":  "application/json",
 		}).
 		SetBody(post{
@@ -274,7 +264,7 @@ func postSB(name, spotifyID string, artists []string, favorite bool) error {
 			SpotifyID: spotifyID,
 			Favorite:  favorite,
 		}).
-		Post(fmt.Sprintf("%s%s", sbSpotifipURL+sbAPIBaseURL, sbFipElectroDB))
+		Post(fmt.Sprintf("%s/fip_electro", sbURL))
 	if err != nil {
 		return err
 	}
@@ -286,22 +276,21 @@ func postSB(name, spotifyID string, artists []string, favorite bool) error {
 	return nil
 }
 
-func setSBFavorite(spotifyID string) error {
+func setSBFavorite(sbKey, sbURL, spotifyID string) error {
 	type fav struct {
 		Favorite bool `json:"favorite"`
 	}
+	httpClient := resty.New()
 	resp, err := httpClient.R().EnableTrace().
 		SetHeaders(map[string]string{
-			"apikey":        sbSpotifipServiceKey,
-			"Authorization": "Bearer " + sbSpotifipServiceKey,
+			"apikey":        sbKey,
+			"Authorization": "Bearer " + sbKey,
 			"Content-Type":  "application/json",
 			"Prefer":        "return=minimal",
 		}).
-		SetBody(fav{
-			Favorite: true,
-		}).
-		Patch(fmt.Sprintf("%s%s?spotify_id=eq.%s",
-			sbSpotifipURL+sbAPIBaseURL, sbFipElectroDB, spotifyID))
+		SetBody(fav{Favorite: true}).
+		Patch(fmt.Sprintf("%s/fip_electro?spotify_id=eq.%s",
+			sbURL, spotifyID))
 	if err != nil {
 		return err
 	}
