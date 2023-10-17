@@ -1,6 +1,6 @@
 module github.com/antoinegelloz/spotifip
 
-go 1.17
+go 1.21
 
 require (
 	github.com/go-resty/resty/v2 v2.10.0

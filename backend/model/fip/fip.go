@@ -1,23 +1,24 @@
 package fip
 
 type Fip struct {
-	DelayToRefresh int     `json:"delayToRefresh"`
-	Now            Track   `json:"now"`
-	Migrated       bool    `json:"migrated"`
-	Next           []Track `json:"next"`
+	Now  Track   `json:"now"`
+	Next []Track `json:"next"`
 }
 
 type Track struct {
-	FirstLine  string `json:"firstLine"`
-	SecondLine string `json:"secondLine"`
-	Song       Song   `json:"song"`
+	FirstLine  string     `json:"firstLine"`
+	SecondLine string     `json:"secondLine"`
+	ThirdLine  string     `json:"thirdLine"`
+	StartTime  int        `json:"startTime"`
+	EndTime    int        `json:"endTime"`
+	CardVisual CardVisual `json:"cardVisual"`
+	Song       Song       `json:"song"`
 }
 
-type Sources struct {
-	URL           string `json:"url"`
-	BroadcastType string `json:"broadcastType"`
-	Format        string `json:"format"`
-	Bitrate       int    `json:"bitrate"`
+type CardVisual struct {
+	Type  string `json:"type"`
+	Src   string `json:"src"`
+	Model string `json:"model"`
 }
 
 type Song struct {

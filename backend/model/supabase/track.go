@@ -6,4 +6,5 @@ type Track struct {
 	Artists   []string `json:"artists"`
 	SpotifyID string   `json:"spotify_id"`
 	Favorite  bool     `json:"favorite"`
+	Raw       any      `json:"raw"`
 }

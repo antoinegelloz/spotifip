@@ -23,7 +23,7 @@ func main() {
 	}
 
 	fipElectroURL := getEnvVar("FIP_ELECTRO_URL")
-	resp, err := resty.New().R().EnableTrace().
+	resp, err := resty.New().R().
 		SetResult(&fip.Fip{}).
 		Get(fipElectroURL)
 	if err != nil {
@@ -54,7 +54,7 @@ func main() {
 
 	spotifyClientID := getEnvVar("SPOTIFY_CLIENT_ID")
 	spotifyClientSecret := getEnvVar("SPOTIFY_CLIENT_SECRET")
-	resp, err = resty.New().R().EnableTrace().
+	resp, err = resty.New().R().
 		SetHeader("Authorization",
 			"Basic "+base64.StdEncoding.EncodeToString(
 				[]byte(spotifyClientID+":"+spotifyClientSecret))).
@@ -92,7 +92,13 @@ func main() {
 		searchQuery += " artist:" + f.Now.SecondLine
 	}
 
-	req := resty.New().R().EnableTrace().
+	nowName := fmt.Sprintf("%s %s", f.Now.FirstLine, f.Now.SecondLine)
+	if lastTrack.SpotifyID == "" && lastTrack.Name == nowName {
+		logger.Get().Infof("current track %s already inserted without ID", nowName)
+		return
+	}
+
+	req := resty.New().R().
 		SetHeader("Authorization",
 			fmt.Sprintf("%s %s", c.TokenType, c.AccessToken)).
 		SetQueryParam("type", "track").
@@ -123,21 +129,19 @@ func main() {
 		logger.Get().Infow("GET Spotify search: no results",
 			"query", searchQuery)
 		if lastTrack.Name != searchQuery {
-			if err = postToSB(sbKey, sbURL,
-				fmt.Sprintf("%s %s",
-					f.Now.FirstLine, f.Now.SecondLine),
-				"", []string{}, false); err != nil {
+			if err = postToSB(sbKey, sbURL, nowName,
+				"", []string{}, false, f); err != nil {
 				logger.Get().Errorf("POST Supabase: %s", err)
 			}
 		}
 		return
 	}
 
-	currTrack := s.Tracks.Items[0]
-	if currTrack.Name == lastTrack.Name {
-		logger.Get().Infof("current track %s (%s) already inserted", currTrack.Name, currTrack.ID)
+	spotifyTrack := s.Tracks.Items[0]
+	if spotifyTrack.Name == lastTrack.Name {
+		logger.Get().Infof("Spotify track %s (%s) already inserted", spotifyTrack.Name, spotifyTrack.ID)
 		if lastTrack.Favorite {
-			if err = setSBFavorite(sbKey, sbURL, currTrack.ID); err != nil {
+			if err = setSBFavorite(sbKey, sbURL, spotifyTrack.ID); err != nil {
 				logger.Get().Errorf("Set favorite: %s", err)
 			}
 		}
@@ -145,12 +149,12 @@ func main() {
 	}
 
 	var artists []string
-	for _, artist := range currTrack.Artists {
+	for _, artist := range spotifyTrack.Artists {
 		artists = append(artists, artist.Name)
 	}
 
 	insertedTracks, err := getSBInsertedTracksByID(
-		sbKey, sbSpotifipURL+sbAPIBaseURL, currTrack.ID)
+		sbKey, sbSpotifipURL+sbAPIBaseURL, spotifyTrack.ID)
 	if err != nil {
 		logger.Get().Errorf("GET Supabase inserted tracks: %s", err)
 		return
@@ -170,21 +174,20 @@ func main() {
 	}
 
 	if err = postToSB(sbKey, sbURL,
-		currTrack.Name, currTrack.ID, artists, favorite); err != nil {
+		spotifyTrack.Name, spotifyTrack.ID, artists, favorite, f); err != nil {
 		logger.Get().Errorf("POST to Supabase: %s", err)
 		return
 	}
 
 	logger.Get().Infow("new track",
 		"query", searchQuery,
-		"name", currTrack.Name,
+		"name", spotifyTrack.Name,
 		"artists", strings.Join(artists, ","),
-		"id", currTrack.ID)
+		"id", spotifyTrack.ID)
 }
 
 func getSBLastTrack(sbKey, sbURL string) (supabase.Track, error) {
-	httpClient := resty.New()
-	resp, err := httpClient.R().EnableTrace().
+	resp, err := resty.New().R().
 		SetHeaders(map[string]string{
 			"apikey":        sbKey,
 			"Authorization": "Bearer " + sbKey,
@@ -220,7 +223,7 @@ func getSBLastTrack(sbKey, sbURL string) (supabase.Track, error) {
 
 func getSBInsertedTracksByID(sbKey, sbURL, spotifyID string) ([]supabase.Track, error) {
 	httpClient := resty.New()
-	resp, err := httpClient.R().EnableTrace().
+	resp, err := httpClient.R().
 		SetHeaders(map[string]string{
 			"apikey":        sbKey,
 			"Authorization": "Bearer " + sbKey,
@@ -244,15 +247,16 @@ func getSBInsertedTracksByID(sbKey, sbURL, spotifyID string) ([]supabase.Track, 
 	return *tracks, nil
 }
 
-func postToSB(sbKey, sbURL, name, spotifyID string, artists []string, favorite bool) error {
+func postToSB(sbKey, sbURL, name, spotifyID string, artists []string, favorite bool, f *fip.Fip) error {
 	type post struct {
 		Name      string   `json:"name"`
 		Artists   []string `json:"artists"`
 		SpotifyID string   `json:"spotify_id"`
 		Favorite  bool     `json:"favorite"`
+		Raw       any      `json:"raw"`
 	}
 	httpClient := resty.New()
-	resp, err := httpClient.R().EnableTrace().
+	resp, err := httpClient.R().
 		SetHeaders(map[string]string{
 			"apikey":        sbKey,
 			"Authorization": "Bearer " + sbKey,
@@ -263,6 +267,7 @@ func postToSB(sbKey, sbURL, name, spotifyID string, artists []string, favorite b
 			Artists:   artists,
 			SpotifyID: spotifyID,
 			Favorite:  favorite,
+			Raw:       f,
 		}).
 		Post(fmt.Sprintf("%s/fip_electro", sbURL))
 	if err != nil {
@@ -281,7 +286,7 @@ func setSBFavorite(sbKey, sbURL, spotifyID string) error {
 		Favorite bool `json:"favorite"`
 	}
 	httpClient := resty.New()
-	resp, err := httpClient.R().EnableTrace().
+	resp, err := httpClient.R().
 		SetHeaders(map[string]string{
 			"apikey":        sbKey,
 			"Authorization": "Bearer " + sbKey,
