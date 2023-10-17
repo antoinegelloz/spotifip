@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"os"
 	"strconv"
@@ -253,12 +252,7 @@ func postToSB(sbKey, sbURL, name, spotifyID string, artists []string, favorite b
 		Artists   []string `json:"artists"`
 		SpotifyID string   `json:"spotify_id"`
 		Favorite  bool     `json:"favorite"`
-		Raw       []byte   `json:"raw"`
-	}
-
-	by, err := json.Marshal(*f)
-	if err != nil {
-		return fmt.Errorf("json.Marshal: %w", err)
+		Raw       any      `json:"raw"`
 	}
 
 	resp, err := resty.New().R().
@@ -272,7 +266,7 @@ func postToSB(sbKey, sbURL, name, spotifyID string, artists []string, favorite b
 			Artists:   artists,
 			SpotifyID: spotifyID,
 			Favorite:  favorite,
-			Raw:       by,
+			Raw:       *f,
 		}).
 		Post(fmt.Sprintf("%s/fip_electro", sbURL))
 	if err != nil {
