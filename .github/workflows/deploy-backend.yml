@@ -14,4 +14,5 @@ jobs:
         port: ${{ secrets.PORT }}
         key: ${{ secrets.KEY }}
         source: "backend/spotifip"
-        target: "/home/spotifip/"
+        target: "/home/spotifip"
+        strip_components: 1
