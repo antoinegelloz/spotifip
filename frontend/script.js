@@ -74,7 +74,7 @@ function initSelectGenre(event) {
       "https://www.radiofrance.fr/fip/radio-" +
       val.replace("fip_", "").replace("_", "-");
   }
-  resize(helperElement.offsetWidth + 25);
+  resize(helperElement.offsetWidth + 35);
 }
 
 function resize(width) {
