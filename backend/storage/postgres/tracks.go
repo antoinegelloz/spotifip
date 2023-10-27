@@ -4,10 +4,10 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"github.com/antoinegelloz/spotifip/model/supabase"
 	"os"
 
 	"github.com/antoinegelloz/spotifip/logger"
-	"github.com/antoinegelloz/spotifip/model/supabase"
 	"github.com/antoinegelloz/spotifip/storage"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
@@ -17,13 +17,11 @@ import (
 	"github.com/uptrace/bun/extra/bundebug"
 )
 
-type trackStore struct {
+type trackStore[T any] struct {
 	DB *bun.DB
 }
 
-var _ storage.TrackStore = &trackStore{}
-
-func NewTrackStore() (storage.TrackStore, error) {
+func NewTrackStore[T any]() (storage.TrackStore[T], error) {
 	pgconn := pgdriver.NewConnector(
 		pgdriver.WithNetwork("tcp"),
 		pgdriver.WithAddr(getEnvVar("POSTGRES_ADDR")),
@@ -44,33 +42,23 @@ func NewTrackStore() (storage.TrackStore, error) {
 		return nil, errors.Wrap(err, "bun.DB.Ping")
 	}
 
-	if _, err := db.NewCreateTable().Model((*supabase.Track)(nil)).
+	if _, err := db.NewCreateTable().Model((*T)(nil)).
 		IfNotExists().Exec(context.Background()); err != nil {
-		return nil, errors.Wrap(err, "create table fip_electro")
+		return nil, fmt.Errorf("create table: %w", err)
 	}
 
-	return trackStore{DB: db}, nil
+	return trackStore[T]{DB: db}, nil
 }
 
-func getEnvVar(key string) string {
-	envVar := os.Getenv(key)
-	if envVar == "" {
-		err := "couldn't find env var " + key
-		logger.Get().Errorf(err)
-		panic(err)
-	}
-	return envVar
-}
-
-func (s trackStore) InsertOneTrack(track supabase.Track) error {
+func (s trackStore[T]) InsertTrack(track T) error {
 	if _, err := s.DB.NewInsert().Model(&track).Exec(context.Background()); err != nil {
-		return errors.Wrap(err, "insert track")
+		return err
 	}
 	return nil
 }
 
-func (s trackStore) GetLastTrack() (*supabase.Track, error) {
-	rows, err := s.DB.NewSelect().Model((*supabase.Track)(nil)).
+func (s trackStore[T]) GetLastTrack() (*supabase.Track, error) {
+	rows, err := s.DB.NewSelect().Model((*T)(nil)).
 		Order("id DESC").
 		Limit(1).
 		Rows(context.Background())
@@ -82,7 +70,7 @@ func (s trackStore) GetLastTrack() (*supabase.Track, error) {
 	}
 	defer rows.Close()
 
-	tracks := []*supabase.Track{}
+	var tracks []*supabase.Track
 	for rows.Next() {
 		var track supabase.Track
 		if err := s.DB.ScanRow(context.Background(), rows, &track); err != nil {
@@ -93,13 +81,26 @@ func (s trackStore) GetLastTrack() (*supabase.Track, error) {
 	if err := rows.Err(); err != nil {
 		return nil, errors.Wrap(err, "while reading")
 	}
-	if len(tracks) != 1 {
+	if len(tracks) == 0 {
+		return nil, nil
+	}
+	if len(tracks) > 1 {
 		return nil, fmt.Errorf("%d tracks found", len(tracks))
 	}
 
 	return tracks[0], nil
 }
 
-func (s trackStore) Close() {
+func (s trackStore[T]) Close() {
 	_ = s.DB.Close()
+}
+
+func getEnvVar(key string) string {
+	envVar := os.Getenv(key)
+	if envVar == "" {
+		err := "couldn't find env var " + key
+		logger.Get().Errorf(err)
+		panic(err)
+	}
+	return envVar
 }

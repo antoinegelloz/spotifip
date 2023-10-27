@@ -1,5 +1,127 @@
-#spotify-block {
-  padding: 20px;
-  height: 1000px;
-  max-width: 900px;
+:root {
+  --dynamic-size: 20px;
+  --arrow-size: 20px;
+  --select-size: calc(var(--dynamic-size) + var(--arrow-size));
+}
+
+body {
+  margin: 50px;
+  background-color: #fff7f8;
+}
+
+a {
+  text-decoration: none;
+}
+
+#div-title {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.title {
+  font-family: monospace;
+  font-size: 2em;
+  color: rgb(0, 0, 0);
+  text-align: center;
+}
+
+#div-select {
+  margin-left: 12px;
+  margin-right: 5px;
+  width: var(--select-size);
+}
+
+#select-genre {
+  width: var(--select-size);
+  font-family: monospace;
+  font-size: 2em;
+  padding: 10px;
+  border-radius: 20px;
+}
+
+#helper-element {
+  font-family: monospace;
+  font-size: 2em;
+  position: absolute;
+  top: 0;
+  left: -9999px;
+}
+
+#div-fip {
+  display: grid;
+  margin: 50px auto;
+  background-color: #e2007a;
+  border-radius: 0.75rem;
+  width: 320px;
+  height: 370px;
+  box-shadow: rgba(0, 0, 0, 0.137) 0px 5.75408px 8.77039px 0px;
+}
+
+#div-fip-inside {
+  margin: 30px;
+}
+
+#fip-images {
+  display: flex;
+}
+
+#fip-image {
+  height: 170px;
+  width: 170px;
+  border-radius: 12px;
+  box-shadow: rgba(0, 0, 0, 0.137) 0px 5.75408px 8.77039px 0px;
+}
+
+#fip-logo {
+  width: 100px;
+  margin-left: 8px;
+}
+
+#fip-infos {
+  margin-top: 15px;
+  font-family:
+    Marlin,
+    -apple-system,
+    "system-ui",
+    "Segoe UI",
+    Roboto,
+    Oxygen,
+    Ubuntu,
+    Cantarell,
+    "Fira Sans",
+    "Droid Sans",
+    "Helvetica Neue",
+    sans-serif;
+}
+
+#fip-firstLine {
+  font-size: 1.5rem;
+  color: #fff7f8;
+}
+
+#fip-secondLine {
+  font-size: 14px;
+  color: #fff7f8;
+}
+
+#fip-title {
+  margin-top: 10px;
+  font-size: 14px;
+  color: #fff7f8;
+}
+
+#fip-label {
+  font-size: 14px;
+  color: #fff7f8;
+}
+
+#fip-year {
+  font-size: 14px;
+  color: #fff7f8;
+}
+
+#div-spotify {
+  width: 320px;
+  margin: 0 auto;
 }

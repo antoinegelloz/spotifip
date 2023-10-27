@@ -7,7 +7,53 @@
   </head>
   <body>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-    <div id="spotify-block"></div>
+    <div id="div-title">
+      <div class="title">What's playing now on</div>
+      <div id="div-select">
+        <label for="select-genre"></label
+        ><select name="genre" id="select-genre">
+          <option value="fip">FIP</option>
+          <option value="fip_electro">FIP Electro</option>
+          <option value="fip_jazz">FIP Jazz</option>
+          <option value="fip_groove">FIP Groove</option>
+          <option value="fip_world">FIP Monde</option>
+          <option value="fip_rock">FIP Rock</option>
+          <option value="fip_reggae">FIP Reggae</option>
+          <option value="fip_metal">FIP Metal</option>
+          <option value="fip_hiphop">FIP Hip-Hop</option>
+          <option value="fip_pop">FIP Pop</option>
+          <option value="fip_nouveautes">FIP Nouveautés</option>
+          <option value="fip_sacre_francais">FIP Sacré Français !</option>
+        </select>
+        <span id="helper-element" aria-hidden="true"></span>
+      </div>
+      <div class="title">?</div>
+    </div>
+    <div id="div-fip">
+      <a id="link" target="_blank">
+        <div id="div-fip-inside">
+          <div id="fip-images">
+            <img
+              id="fip-image"
+              src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs="
+              alt="Loading..."
+            />
+            <img
+              id="fip-logo"
+              src="https://www.radiofrance.fr/client/immutable/assets/fip-rect.b49088ea.svg"
+            />
+          </div>
+          <div id="fip-infos">
+            <div id="fip-firstLine">Loading...</div>
+            <div id="fip-secondLine">Loading...</div>
+            <div id="fip-title">Loading...</div>
+            <div id="fip-label">Loading...</div>
+            <div id="fip-year">Loading...</div>
+          </div>
+        </div>
+      </a>
+    </div>
+    <div id="div-spotify"></div>
     <script src="script.js"></script>
   </body>
 </html>
