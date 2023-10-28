@@ -1,11 +1,11 @@
 :root {
-  --dynamic-size: 20px;
-  --arrow-size: 20px;
+  --dynamic-size: 1em;
+  --arrow-size: 1em;
   --select-size: calc(var(--dynamic-size) + var(--arrow-size));
 }
 
 body {
-  margin: 50px;
+  margin: 15px;
   background-color: #fff7f8;
 }
 
@@ -21,7 +21,7 @@ a {
 
 .title {
   font-family: monospace;
-  font-size: 2em;
+  font-size: 1em;
   color: rgb(0, 0, 0);
   text-align: center;
 }
@@ -35,14 +35,14 @@ a {
 #select-genre {
   width: var(--select-size);
   font-family: monospace;
-  font-size: 2em;
+  font-size: 1em;
   padding: 10px;
   border-radius: 20px;
 }
 
 #helper-element {
   font-family: monospace;
-  font-size: 2em;
+  font-size: 1em;
   position: absolute;
   top: 0;
   left: -9999px;
@@ -54,7 +54,7 @@ a {
   background-color: #e2007a;
   border-radius: 0.75rem;
   width: 320px;
-  height: 370px;
+  height: 430px;
   box-shadow: rgba(0, 0, 0, 0.137) 0px 5.75408px 8.77039px 0px;
 }
 
@@ -101,23 +101,23 @@ a {
 }
 
 #fip-secondLine {
-  font-size: 14px;
+  font-size: 1em;
   color: #fff7f8;
 }
 
 #fip-title {
   margin-top: 10px;
-  font-size: 14px;
+  font-size: 0.9em;
   color: #fff7f8;
 }
 
 #fip-label {
-  font-size: 14px;
+  font-size: 0.9em;
   color: #fff7f8;
 }
 
 #fip-year {
-  font-size: 14px;
+  font-size: 0.9em;
   color: #fff7f8;
 }
 
