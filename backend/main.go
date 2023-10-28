@@ -581,7 +581,7 @@ func getTrackToInsert[T any](c *spotify.ClientCredentials, ts storage.TrackStore
 	}
 
 	if lastTrack != nil && lastTrack.SpotifyID == "" && lastTrack.Name == name {
-		logger.Get().Infof("current track %s already inserted without ID", name)
+		//current track %s already inserted without ID, name
 		return nil, nil
 	}
 
@@ -627,8 +627,7 @@ func getTrackToInsert[T any](c *spotify.ClientCredentials, ts storage.TrackStore
 
 	spotifyTrack := s.Tracks.Items[0]
 	if lastTrack != nil && spotifyTrack.Name == lastTrack.Name {
-		logger.Get().Infof(
-			"Spotify track %s (%s) already inserted", spotifyTrack.Name, spotifyTrack.ID)
+		//Spotify track %s (%s) already inserted, spotifyTrack.Name, spotifyTrack.ID
 		return nil, nil
 	}
 
