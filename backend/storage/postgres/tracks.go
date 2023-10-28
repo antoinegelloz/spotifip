@@ -24,10 +24,10 @@ type trackStore[T any] struct {
 func NewTrackStore[T any]() (storage.TrackStore[T], error) {
 	pgconn := pgdriver.NewConnector(
 		pgdriver.WithNetwork("tcp"),
-		pgdriver.WithAddr(getEnvVar("POSTGRES_ADDR")),
-		pgdriver.WithUser(getEnvVar("POSTGRES_USER")),
-		pgdriver.WithPassword(getEnvVar("POSTGRES_PASSWORD")),
-		pgdriver.WithDatabase(getEnvVar("POSTGRES_DB")),
+		pgdriver.WithAddr(getEnvVar("SUPABASE_POSTGRES_ADDR")),
+		pgdriver.WithUser(getEnvVar("SUPABASE_POSTGRES_USER")),
+		pgdriver.WithPassword(getEnvVar("SUPABASE_POSTGRES_PASSWORD")),
+		pgdriver.WithDatabase(getEnvVar("SUPABASE_POSTGRES_DB")),
 	)
 
 	sqldb := sql.OpenDB(pgconn)

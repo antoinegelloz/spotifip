@@ -84,7 +84,7 @@ func main() {
 
 func fipFip(c *spotify.ClientCredentials) {
 	genre := "fip"
-	f, err := getFip(getEnvVar("FIP_API_URL"), genre)
+	f, err := getFip(getEnvVar("FIP_API_BASE_URL"), genre)
 	if err != nil {
 		logger.Get().Errorf("get %s: %s", genre, err)
 		return
@@ -125,7 +125,7 @@ func fipFip(c *spotify.ClientCredentials) {
 
 func fipElectro(c *spotify.ClientCredentials) {
 	genre := "fip_electro"
-	f, err := getFip(getEnvVar("FIP_API_URL"), genre)
+	f, err := getFip(getEnvVar("FIP_API_BASE_URL"), genre)
 	if err != nil {
 		logger.Get().Errorf("get %s: %s", genre, err)
 		return
@@ -166,7 +166,7 @@ func fipElectro(c *spotify.ClientCredentials) {
 
 func fipPop(c *spotify.ClientCredentials) {
 	genre := "fip_pop"
-	f, err := getFip(getEnvVar("FIP_API_URL"), genre)
+	f, err := getFip(getEnvVar("FIP_API_BASE_URL"), genre)
 	if err != nil {
 		logger.Get().Errorf("get %s: %s", genre, err)
 		return
@@ -207,7 +207,7 @@ func fipPop(c *spotify.ClientCredentials) {
 
 func fipMetal(c *spotify.ClientCredentials) {
 	genre := "fip_metal"
-	f, err := getFip(getEnvVar("FIP_API_URL"), genre)
+	f, err := getFip(getEnvVar("FIP_API_BASE_URL"), genre)
 	if err != nil {
 		logger.Get().Errorf("get %s: %s", genre, err)
 		return
@@ -248,7 +248,7 @@ func fipMetal(c *spotify.ClientCredentials) {
 
 func fipWorld(c *spotify.ClientCredentials) {
 	genre := "fip_world"
-	f, err := getFip(getEnvVar("FIP_API_URL"), genre)
+	f, err := getFip(getEnvVar("FIP_API_BASE_URL"), genre)
 	if err != nil {
 		logger.Get().Errorf("get %s: %s", genre, err)
 		return
@@ -289,7 +289,7 @@ func fipWorld(c *spotify.ClientCredentials) {
 
 func fipGroove(c *spotify.ClientCredentials) {
 	genre := "fip_groove"
-	f, err := getFip(getEnvVar("FIP_API_URL"), genre)
+	f, err := getFip(getEnvVar("FIP_API_BASE_URL"), genre)
 	if err != nil {
 		logger.Get().Errorf("get %s: %s", genre, err)
 		return
@@ -330,7 +330,7 @@ func fipGroove(c *spotify.ClientCredentials) {
 
 func fipJazz(c *spotify.ClientCredentials) {
 	genre := "fip_jazz"
-	f, err := getFip(getEnvVar("FIP_API_URL"), genre)
+	f, err := getFip(getEnvVar("FIP_API_BASE_URL"), genre)
 	if err != nil {
 		logger.Get().Errorf("get %s: %s", genre, err)
 		return
@@ -371,7 +371,7 @@ func fipJazz(c *spotify.ClientCredentials) {
 
 func fipSacreFrancais(c *spotify.ClientCredentials) {
 	genre := "fip_sacre_francais"
-	f, err := getFip(getEnvVar("FIP_API_URL"), genre)
+	f, err := getFip(getEnvVar("FIP_API_BASE_URL"), genre)
 	if err != nil {
 		logger.Get().Errorf("get %s: %s", genre, err)
 		return
@@ -412,7 +412,7 @@ func fipSacreFrancais(c *spotify.ClientCredentials) {
 
 func fipNouveautes(c *spotify.ClientCredentials) {
 	genre := "fip_nouveautes"
-	f, err := getFip(getEnvVar("FIP_API_URL"), genre)
+	f, err := getFip(getEnvVar("FIP_API_BASE_URL"), genre)
 	if err != nil {
 		logger.Get().Errorf("get %s: %s", genre, err)
 		return
@@ -453,7 +453,7 @@ func fipNouveautes(c *spotify.ClientCredentials) {
 
 func fipHipHop(c *spotify.ClientCredentials) {
 	genre := "fip_hiphop"
-	f, err := getFip(getEnvVar("FIP_API_URL"), genre)
+	f, err := getFip(getEnvVar("FIP_API_BASE_URL"), genre)
 	if err != nil {
 		logger.Get().Errorf("get %s: %s", genre, err)
 		return
@@ -494,7 +494,7 @@ func fipHipHop(c *spotify.ClientCredentials) {
 
 func fipReggae(c *spotify.ClientCredentials) {
 	genre := "fip_reggae"
-	f, err := getFip(getEnvVar("FIP_API_URL"), genre)
+	f, err := getFip(getEnvVar("FIP_API_BASE_URL"), genre)
 	if err != nil {
 		logger.Get().Errorf("get %s: %s", genre, err)
 		return
@@ -535,7 +535,7 @@ func fipReggae(c *spotify.ClientCredentials) {
 
 func fipRock(c *spotify.ClientCredentials) {
 	genre := "fip_rock"
-	f, err := getFip(getEnvVar("FIP_API_URL"), genre)
+	f, err := getFip(getEnvVar("FIP_API_BASE_URL"), genre)
 	if err != nil {
 		logger.Get().Errorf("get %s: %s", genre, err)
 		return

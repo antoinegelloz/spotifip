@@ -1,7 +1,7 @@
-const _supabase = supabase.createClient(
-  "https://kkfqicodrymzypjruroz.supabase.co",
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlhdCI6MTY0MTE2MDAyNSwiZXhwIjoxOTU2NzM2MDI1fQ.uSADYXf2KKJ7faHBaM152Gz2m0djlOErD5rb6_jiYYI",
-);
+const SupabaseUrl = "https://kkfqicodrymzypjruroz.supabase.co"
+const SupabasePublicAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlhdCI6MTY0MTE2MDAyNSwiZXhwIjoxOTU2NzM2MDI1fQ.uSADYXf2KKJ7faHBaM152Gz2m0djlOErD5rb6_jiYYI"
+
+const _supabase = supabase.createClient(SupabaseUrl, SupabasePublicAnonKey);
 
 document.addEventListener("DOMContentLoaded", getLastTrack);
 setInterval(getLastTrack, 5000);
