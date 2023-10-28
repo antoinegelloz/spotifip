@@ -1,11 +1,11 @@
 :root {
-  --dynamic-size: 1em;
-  --arrow-size: 1em;
+  --dynamic-size: 1.5em;
+  --arrow-size: 1.5em;
   --select-size: calc(var(--dynamic-size) + var(--arrow-size));
 }
 
 body {
-  margin: 15px;
+  margin: 30px;
   background-color: #fff7f8;
 }
 
@@ -13,36 +13,31 @@ a {
   text-decoration: none;
 }
 
-#div-title {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
 .title {
   font-family: monospace;
-  font-size: 1em;
+  font-size: 1.5em;
   color: rgb(0, 0, 0);
   text-align: center;
 }
 
 #div-select {
-  margin-left: 12px;
-  margin-right: 5px;
-  width: var(--select-size);
+  margin-top: 20px;
+  display: flex;
+  width: 100%;
+  justify-content: center;
 }
 
 #select-genre {
   width: var(--select-size);
   font-family: monospace;
-  font-size: 1em;
+  font-size: 1.5em;
   padding: 10px;
   border-radius: 20px;
 }
 
 #helper-element {
   font-family: monospace;
-  font-size: 1em;
+  font-size: 1.5em;
   position: absolute;
   top: 0;
   left: -9999px;
@@ -50,11 +45,11 @@ a {
 
 #div-fip {
   display: grid;
-  margin: 50px auto;
+  margin: 20px auto;
   background-color: #e2007a;
   border-radius: 0.75rem;
   width: 320px;
-  height: 430px;
+  height: auto;
   box-shadow: rgba(0, 0, 0, 0.137) 0px 5.75408px 8.77039px 0px;
 }
 
