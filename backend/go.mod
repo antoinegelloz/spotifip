@@ -9,7 +9,7 @@ require (
 	github.com/spf13/viper v1.18.2
 	github.com/uptrace/bun v1.1.17
 	github.com/uptrace/bun/dialect/pgdialect v1.1.17
-	github.com/uptrace/bun/driver/pgdriver v1.1.16
+	github.com/uptrace/bun/driver/pgdriver v1.1.17
 	github.com/uptrace/bun/extra/bundebug v1.1.16
 	go.uber.org/zap v1.26.0
 )
