@@ -3,7 +3,7 @@ module github.com/antoinegelloz/spotifip
 go 1.21
 
 require (
-	github.com/go-resty/resty/v2 v2.10.0
+	github.com/go-resty/resty/v2 v2.11.0
 	github.com/joho/godotenv v1.5.1
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/viper v1.17.0
