@@ -1,13 +1,17 @@
 name: deploy-backend
-on: [push]
+on:
+  push:
+    branches:
+      - main
+
 jobs:
   deploy-backend:
     name: deploy-backend
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@master
+    - uses: actions/checkout@v4
     - name: SCP command to transfer files via SSH
-      uses: appleboy/scp-action@master
+      uses: appleboy/scp-action@v0.1.7
       with:
         host: ${{ secrets.HOST }}
         username: ${{ secrets.USERNAME }}
