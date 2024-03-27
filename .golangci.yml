@@ -1,0 +1,30 @@
+run:
+  timeout: 5m
+  concurrency: 4
+linters:
+  enable-all: true
+  disable:
+    - dupl
+    - exhaustivestruct
+    - golint
+    - maligned
+    - interfacer
+    - deadcode
+    - ifshort
+    - structcheck
+    - varcheck
+    - nosnakecase
+    - scopelint
+    - varnamelen
+    - wsl
+    - goconst
+    - funlen
+    - nlreturn
+    - nilnil
+    - gomnd
+    - prealloc
+    - exhaustruct
+    - goerr113
+    - tagliatelle
+    - cyclop
+    - depguard

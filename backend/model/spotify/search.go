@@ -21,7 +21,7 @@ type Items struct {
 	DiscNumber       int          `json:"disc_number"`
 	DurationMs       int          `json:"duration_ms"`
 	Explicit         bool         `json:"explicit"`
-	ExternalIds      ExternalIds  `json:"external_ids"`
+	ExternalIDs      ExternalIDs  `json:"external_ids"`
 	ExternalUrls     ExternalUrls `json:"external_urls"`
 	Href             string       `json:"href"`
 	ID               string       `json:"id"`
@@ -69,6 +69,6 @@ type Images struct {
 	Width  int    `json:"width"`
 }
 
-type ExternalIds struct {
+type ExternalIDs struct {
 	Isrc string `json:"isrc"`
 }

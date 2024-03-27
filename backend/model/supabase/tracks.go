@@ -67,7 +67,7 @@ type FipPop struct {
 type Track struct {
 	ID        int64    `bun:",pk,autoincrement" json:"id"`
 	Name      string   `json:"name"`
-	Artists   []string `bun:",array" json:"artists"`
+	Artists   []string `bun:",array"            json:"artists"`
 	SpotifyID string   `json:"spotify_id"`
 	Favorite  bool     `json:"favorite"`
 
