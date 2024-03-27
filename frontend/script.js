@@ -25,11 +25,11 @@ async function getLastTrack() {
 
   let currentTrack = data[0];
   document.getElementById("fip-image").src =
-    currentTrack.raw.now.cardVisual.src;
+    currentTrack.raw.now.visuals.card.src;
   document.getElementById("fip-firstLine").innerText =
-    currentTrack.raw.now.firstLine;
+    currentTrack.raw.now.firstLine.title;
   document.getElementById("fip-secondLine").innerText =
-    currentTrack.raw.now.secondLine;
+    currentTrack.raw.now.secondLine.title;
   if (currentTrack.raw.now.song.year !== 0) {
     document.getElementById("fip-year").innerText =
       currentTrack.raw.now.song.year;
