@@ -3,7 +3,11 @@ package main
 import (
 	"encoding/base64"
 	"fmt"
-	"github.com/antoinegelloz/spotifip/logger"
+	"log/slog"
+	"os"
+	"strings"
+	"sync"
+
 	"github.com/antoinegelloz/spotifip/model/fip"
 	"github.com/antoinegelloz/spotifip/model/spotify"
 	"github.com/antoinegelloz/spotifip/model/supabase"
@@ -11,21 +15,23 @@ import (
 	"github.com/antoinegelloz/spotifip/storage/postgres"
 	"github.com/go-resty/resty/v2"
 	"github.com/joho/godotenv"
-	"os"
-	"strings"
-	"sync"
 )
 
 func main() {
 	if err := godotenv.Load(); err != nil {
-		err = fmt.Errorf("couldn't load .env file: %w", err)
-		logger.Get().Errorf(err.Error())
+		panic(fmt.Errorf("couldn't load .env file: %w", err))
+	}
+
+	f, err := os.OpenFile("spotifip.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
+	if err != nil {
 		panic(err)
 	}
+	l := slog.New(slog.NewJSONHandler(f, nil))
+	slog.SetDefault(l)
 
 	c, err := getSpotifyClientCredentials()
 	if err != nil {
-		logger.Get().Errorf("get Spotify client credentials: %s", err)
+		slog.Error(fmt.Sprintf("get Spotify client credentials: %v", err))
 		return
 	}
 
@@ -86,35 +92,35 @@ func fipFip(c *spotify.ClientCredentials) {
 	genre := "fip"
 	f, err := getFip(getEnvVar("FIP_API_BASE_URL"), genre)
 	if err != nil {
-		logger.Get().Errorf("get %s: %s", genre, err)
+		slog.Error(fmt.Sprintf("get %s: %s", genre, err))
 		return
 	}
 
-	if f.Now.FirstLine == "Le direct" {
+	if f.Now.FirstLine.Title == "Le direct" {
 		return
 	}
 
-	q := "track:" + f.Now.FirstLine
-	if f.Now.SecondLine != "" {
-		q += " artist:" + f.Now.SecondLine
+	q := "track:" + f.Now.FirstLine.Title
+	if f.Now.SecondLine.Title != "" {
+		q += " artist:" + f.Now.SecondLine.Title
 	}
-	name := fmt.Sprintf("%s %s", f.Now.FirstLine, f.Now.SecondLine)
+	name := fmt.Sprintf("%s %s", f.Now.FirstLine.Title, f.Now.SecondLine.Title)
 
 	ts, err := postgres.NewTrackStore[supabase.Fip]()
 	if err != nil {
-		logger.Get().Errorf("NewTrackStore %s: %s", genre, err)
+		slog.Error(fmt.Sprintf("NewTrackStore %s: %s", genre, err))
 		return
 	}
 	t, err := getTrackToInsert[supabase.Fip](c, ts, name, q, f)
 	if err != nil {
-		logger.Get().Errorf("getTrackToInsert %s: %s", genre, err)
+		slog.Error(fmt.Sprintf("getTrackToInsert %s: %s", genre, err))
 		return
 	} else if t != nil {
 		if err := ts.InsertTrack(supabase.Fip{Track: *t}); err != nil {
-			logger.Get().Errorf("InsertTrack (found) %s: %s", genre, err)
+			slog.Error(fmt.Sprintf("InsertTrack (found) %s: %s", genre, err))
 			return
 		}
-		logger.Get().Infow("new track",
+		slog.Info("new track",
 			"genre", genre,
 			"query", q,
 			"name", t.Name,
@@ -127,35 +133,35 @@ func fipElectro(c *spotify.ClientCredentials) {
 	genre := "fip_electro"
 	f, err := getFip(getEnvVar("FIP_API_BASE_URL"), genre)
 	if err != nil {
-		logger.Get().Errorf("get %s: %s", genre, err)
+		slog.Error(fmt.Sprintf("get %s: %s", genre, err))
 		return
 	}
 
-	if f.Now.FirstLine == "Le direct" {
+	if f.Now.FirstLine.Title == "Le direct" {
 		return
 	}
 
-	q := "track:" + f.Now.FirstLine
-	if f.Now.SecondLine != "" {
-		q += " artist:" + f.Now.SecondLine
+	q := "track:" + f.Now.FirstLine.Title
+	if f.Now.SecondLine.Title != "" {
+		q += " artist:" + f.Now.SecondLine.Title
 	}
-	name := fmt.Sprintf("%s %s", f.Now.FirstLine, f.Now.SecondLine)
+	name := fmt.Sprintf("%s %s", f.Now.FirstLine.Title, f.Now.SecondLine.Title)
 
 	ts, err := postgres.NewTrackStore[supabase.FipElectro]()
 	if err != nil {
-		logger.Get().Errorf("NewTrackStore %s: %s", genre, err)
+		slog.Error(fmt.Sprintf("NewTrackStore %s: %s", genre, err))
 		return
 	}
 	t, err := getTrackToInsert[supabase.FipElectro](c, ts, name, q, f)
 	if err != nil {
-		logger.Get().Errorf("getTrackToInsert %s: %s", genre, err)
+		slog.Error(fmt.Sprintf("getTrackToInsert %s: %s", genre, err))
 		return
 	} else if t != nil {
 		if err := ts.InsertTrack(supabase.FipElectro{Track: *t}); err != nil {
-			logger.Get().Errorf("InsertTrack (found) %s: %s", genre, err)
+			slog.Error(fmt.Sprintf("InsertTrack (found) %s: %s", genre, err))
 			return
 		}
-		logger.Get().Infow("new track",
+		slog.Info("new track",
 			"genre", genre,
 			"query", q,
 			"name", t.Name,
@@ -168,35 +174,35 @@ func fipPop(c *spotify.ClientCredentials) {
 	genre := "fip_pop"
 	f, err := getFip(getEnvVar("FIP_API_BASE_URL"), genre)
 	if err != nil {
-		logger.Get().Errorf("get %s: %s", genre, err)
+		slog.Error(fmt.Sprintf("get %s: %s", genre, err))
 		return
 	}
 
-	if f.Now.FirstLine == "Le direct" {
+	if f.Now.FirstLine.Title == "Le direct" {
 		return
 	}
 
-	q := "track:" + f.Now.FirstLine
-	if f.Now.SecondLine != "" {
-		q += " artist:" + f.Now.SecondLine
+	q := "track:" + f.Now.FirstLine.Title
+	if f.Now.SecondLine.Title != "" {
+		q += " artist:" + f.Now.SecondLine.Title
 	}
-	name := fmt.Sprintf("%s %s", f.Now.FirstLine, f.Now.SecondLine)
+	name := fmt.Sprintf("%s %s", f.Now.FirstLine.Title, f.Now.SecondLine.Title)
 
 	ts, err := postgres.NewTrackStore[supabase.FipPop]()
 	if err != nil {
-		logger.Get().Errorf("NewTrackStore %s: %s", genre, err)
+		slog.Error(fmt.Sprintf("NewTrackStore %s: %s", genre, err))
 		return
 	}
 	t, err := getTrackToInsert[supabase.FipPop](c, ts, name, q, f)
 	if err != nil {
-		logger.Get().Errorf("getTrackToInsert %s: %s", genre, err)
+		slog.Error(fmt.Sprintf("getTrackToInsert %s: %s", genre, err))
 		return
 	} else if t != nil {
 		if err := ts.InsertTrack(supabase.FipPop{Track: *t}); err != nil {
-			logger.Get().Errorf("InsertTrack (found) %s: %s", genre, err)
+			slog.Error(fmt.Sprintf("InsertTrack (found) %s: %s", genre, err))
 			return
 		}
-		logger.Get().Infow("new track",
+		slog.Info("new track",
 			"genre", genre,
 			"query", q,
 			"name", t.Name,
@@ -209,35 +215,35 @@ func fipMetal(c *spotify.ClientCredentials) {
 	genre := "fip_metal"
 	f, err := getFip(getEnvVar("FIP_API_BASE_URL"), genre)
 	if err != nil {
-		logger.Get().Errorf("get %s: %s", genre, err)
+		slog.Error(fmt.Sprintf("get %s: %s", genre, err))
 		return
 	}
 
-	if f.Now.FirstLine == "Le direct" {
+	if f.Now.FirstLine.Title == "Le direct" {
 		return
 	}
 
-	q := "track:" + f.Now.FirstLine
-	if f.Now.SecondLine != "" {
-		q += " artist:" + f.Now.SecondLine
+	q := "track:" + f.Now.FirstLine.Title
+	if f.Now.SecondLine.Title != "" {
+		q += " artist:" + f.Now.SecondLine.Title
 	}
-	name := fmt.Sprintf("%s %s", f.Now.FirstLine, f.Now.SecondLine)
+	name := fmt.Sprintf("%s %s", f.Now.FirstLine.Title, f.Now.SecondLine.Title)
 
 	ts, err := postgres.NewTrackStore[supabase.FipMetal]()
 	if err != nil {
-		logger.Get().Errorf("NewTrackStore %s: %s", genre, err)
+		slog.Error(fmt.Sprintf("NewTrackStore %s: %s", genre, err))
 		return
 	}
 	t, err := getTrackToInsert[supabase.FipMetal](c, ts, name, q, f)
 	if err != nil {
-		logger.Get().Errorf("getTrackToInsert %s: %s", genre, err)
+		slog.Error(fmt.Sprintf("getTrackToInsert %s: %s", genre, err))
 		return
 	} else if t != nil {
 		if err := ts.InsertTrack(supabase.FipMetal{Track: *t}); err != nil {
-			logger.Get().Errorf("InsertTrack (found) %s: %s", genre, err)
+			slog.Error(fmt.Sprintf("InsertTrack (found) %s: %s", genre, err))
 			return
 		}
-		logger.Get().Infow("new track",
+		slog.Info("new track",
 			"genre", genre,
 			"query", q,
 			"name", t.Name,
@@ -250,35 +256,35 @@ func fipWorld(c *spotify.ClientCredentials) {
 	genre := "fip_world"
 	f, err := getFip(getEnvVar("FIP_API_BASE_URL"), genre)
 	if err != nil {
-		logger.Get().Errorf("get %s: %s", genre, err)
+		slog.Error(fmt.Sprintf("get %s: %s", genre, err))
 		return
 	}
 
-	if f.Now.FirstLine == "Le direct" {
+	if f.Now.FirstLine.Title == "Le direct" {
 		return
 	}
 
-	q := "track:" + f.Now.FirstLine
-	if f.Now.SecondLine != "" {
-		q += " artist:" + f.Now.SecondLine
+	q := "track:" + f.Now.FirstLine.Title
+	if f.Now.SecondLine.Title != "" {
+		q += " artist:" + f.Now.SecondLine.Title
 	}
-	name := fmt.Sprintf("%s %s", f.Now.FirstLine, f.Now.SecondLine)
+	name := fmt.Sprintf("%s %s", f.Now.FirstLine.Title, f.Now.SecondLine.Title)
 
 	ts, err := postgres.NewTrackStore[supabase.FipWorld]()
 	if err != nil {
-		logger.Get().Errorf("NewTrackStore %s: %s", genre, err)
+		slog.Error(fmt.Sprintf("NewTrackStore %s: %s", genre, err))
 		return
 	}
 	t, err := getTrackToInsert[supabase.FipWorld](c, ts, name, q, f)
 	if err != nil {
-		logger.Get().Errorf("getTrackToInsert %s: %s", genre, err)
+		slog.Error(fmt.Sprintf("getTrackToInsert %s: %s", genre, err))
 		return
 	} else if t != nil {
 		if err := ts.InsertTrack(supabase.FipWorld{Track: *t}); err != nil {
-			logger.Get().Errorf("InsertTrack (found) %s: %s", genre, err)
+			slog.Error(fmt.Sprintf("InsertTrack (found) %s: %s", genre, err))
 			return
 		}
-		logger.Get().Infow("new track",
+		slog.Info("new track",
 			"genre", genre,
 			"query", q,
 			"name", t.Name,
@@ -291,35 +297,35 @@ func fipGroove(c *spotify.ClientCredentials) {
 	genre := "fip_groove"
 	f, err := getFip(getEnvVar("FIP_API_BASE_URL"), genre)
 	if err != nil {
-		logger.Get().Errorf("get %s: %s", genre, err)
+		slog.Error(fmt.Sprintf("get %s: %s", genre, err))
 		return
 	}
 
-	if f.Now.FirstLine == "Le direct" {
+	if f.Now.FirstLine.Title == "Le direct" {
 		return
 	}
 
-	q := "track:" + f.Now.FirstLine
-	if f.Now.SecondLine != "" {
-		q += " artist:" + f.Now.SecondLine
+	q := "track:" + f.Now.FirstLine.Title
+	if f.Now.SecondLine.Title != "" {
+		q += " artist:" + f.Now.SecondLine.Title
 	}
-	name := fmt.Sprintf("%s %s", f.Now.FirstLine, f.Now.SecondLine)
+	name := fmt.Sprintf("%s %s", f.Now.FirstLine.Title, f.Now.SecondLine.Title)
 
 	ts, err := postgres.NewTrackStore[supabase.FipGroove]()
 	if err != nil {
-		logger.Get().Errorf("NewTrackStore %s: %s", genre, err)
+		slog.Error(fmt.Sprintf("NewTrackStore %s: %s", genre, err))
 		return
 	}
 	t, err := getTrackToInsert[supabase.FipGroove](c, ts, name, q, f)
 	if err != nil {
-		logger.Get().Errorf("getTrackToInsert %s: %s", genre, err)
+		slog.Error(fmt.Sprintf("getTrackToInsert %s: %s", genre, err))
 		return
 	} else if t != nil {
 		if err := ts.InsertTrack(supabase.FipGroove{Track: *t}); err != nil {
-			logger.Get().Errorf("InsertTrack (found) %s: %s", genre, err)
+			slog.Error(fmt.Sprintf("InsertTrack (found) %s: %s", genre, err))
 			return
 		}
-		logger.Get().Infow("new track",
+		slog.Info("new track",
 			"genre", genre,
 			"query", q,
 			"name", t.Name,
@@ -332,35 +338,35 @@ func fipJazz(c *spotify.ClientCredentials) {
 	genre := "fip_jazz"
 	f, err := getFip(getEnvVar("FIP_API_BASE_URL"), genre)
 	if err != nil {
-		logger.Get().Errorf("get %s: %s", genre, err)
+		slog.Error(fmt.Sprintf("get %s: %s", genre, err))
 		return
 	}
 
-	if f.Now.FirstLine == "Le direct" {
+	if f.Now.FirstLine.Title == "Le direct" {
 		return
 	}
 
-	q := "track:" + f.Now.FirstLine
-	if f.Now.SecondLine != "" {
-		q += " artist:" + f.Now.SecondLine
+	q := "track:" + f.Now.FirstLine.Title
+	if f.Now.SecondLine.Title != "" {
+		q += " artist:" + f.Now.SecondLine.Title
 	}
-	name := fmt.Sprintf("%s %s", f.Now.FirstLine, f.Now.SecondLine)
+	name := fmt.Sprintf("%s %s", f.Now.FirstLine.Title, f.Now.SecondLine.Title)
 
 	ts, err := postgres.NewTrackStore[supabase.FipJazz]()
 	if err != nil {
-		logger.Get().Errorf("NewTrackStore %s: %s", genre, err)
+		slog.Error(fmt.Sprintf("NewTrackStore %s: %s", genre, err))
 		return
 	}
 	t, err := getTrackToInsert[supabase.FipJazz](c, ts, name, q, f)
 	if err != nil {
-		logger.Get().Errorf("getTrackToInsert %s: %s", genre, err)
+		slog.Error(fmt.Sprintf("getTrackToInsert %s: %s", genre, err))
 		return
 	} else if t != nil {
 		if err := ts.InsertTrack(supabase.FipJazz{Track: *t}); err != nil {
-			logger.Get().Errorf("InsertTrack (found) %s: %s", genre, err)
+			slog.Error(fmt.Sprintf("InsertTrack (found) %s: %s", genre, err))
 			return
 		}
-		logger.Get().Infow("new track",
+		slog.Info("new track",
 			"genre", genre,
 			"query", q,
 			"name", t.Name,
@@ -373,35 +379,35 @@ func fipSacreFrancais(c *spotify.ClientCredentials) {
 	genre := "fip_sacre_francais"
 	f, err := getFip(getEnvVar("FIP_API_BASE_URL"), genre)
 	if err != nil {
-		logger.Get().Errorf("get %s: %s", genre, err)
+		slog.Error(fmt.Sprintf("get %s: %s", genre, err))
 		return
 	}
 
-	if f.Now.FirstLine == "Le direct" {
+	if f.Now.FirstLine.Title == "Le direct" {
 		return
 	}
 
-	q := "track:" + f.Now.FirstLine
-	if f.Now.SecondLine != "" {
-		q += " artist:" + f.Now.SecondLine
+	q := "track:" + f.Now.FirstLine.Title
+	if f.Now.SecondLine.Title != "" {
+		q += " artist:" + f.Now.SecondLine.Title
 	}
-	name := fmt.Sprintf("%s %s", f.Now.FirstLine, f.Now.SecondLine)
+	name := fmt.Sprintf("%s %s", f.Now.FirstLine.Title, f.Now.SecondLine.Title)
 
 	ts, err := postgres.NewTrackStore[supabase.FipSacreFrancais]()
 	if err != nil {
-		logger.Get().Errorf("NewTrackStore %s: %s", genre, err)
+		slog.Error(fmt.Sprintf("NewTrackStore %s: %s", genre, err))
 		return
 	}
 	t, err := getTrackToInsert[supabase.FipSacreFrancais](c, ts, name, q, f)
 	if err != nil {
-		logger.Get().Errorf("getTrackToInsert %s: %s", genre, err)
+		slog.Error(fmt.Sprintf("getTrackToInsert %s: %s", genre, err))
 		return
 	} else if t != nil {
 		if err := ts.InsertTrack(supabase.FipSacreFrancais{Track: *t}); err != nil {
-			logger.Get().Errorf("InsertTrack (found) %s: %s", genre, err)
+			slog.Error(fmt.Sprintf("InsertTrack (found) %s: %s", genre, err))
 			return
 		}
-		logger.Get().Infow("new track",
+		slog.Info("new track",
 			"genre", genre,
 			"query", q,
 			"name", t.Name,
@@ -414,35 +420,35 @@ func fipNouveautes(c *spotify.ClientCredentials) {
 	genre := "fip_nouveautes"
 	f, err := getFip(getEnvVar("FIP_API_BASE_URL"), genre)
 	if err != nil {
-		logger.Get().Errorf("get %s: %s", genre, err)
+		slog.Error(fmt.Sprintf("get %s: %s", genre, err))
 		return
 	}
 
-	if f.Now.FirstLine == "Le direct" {
+	if f.Now.FirstLine.Title == "Le direct" {
 		return
 	}
 
-	q := "track:" + f.Now.FirstLine
-	if f.Now.SecondLine != "" {
-		q += " artist:" + f.Now.SecondLine
+	q := "track:" + f.Now.FirstLine.Title
+	if f.Now.SecondLine.Title != "" {
+		q += " artist:" + f.Now.SecondLine.Title
 	}
-	name := fmt.Sprintf("%s %s", f.Now.FirstLine, f.Now.SecondLine)
+	name := fmt.Sprintf("%s %s", f.Now.FirstLine.Title, f.Now.SecondLine.Title)
 
 	ts, err := postgres.NewTrackStore[supabase.FipNouveautes]()
 	if err != nil {
-		logger.Get().Errorf("NewTrackStore %s: %s", genre, err)
+		slog.Error(fmt.Sprintf("NewTrackStore %s: %s", genre, err))
 		return
 	}
 	t, err := getTrackToInsert[supabase.FipNouveautes](c, ts, name, q, f)
 	if err != nil {
-		logger.Get().Errorf("getTrackToInsert %s: %s", genre, err)
+		slog.Error(fmt.Sprintf("getTrackToInsert %s: %s", genre, err))
 		return
 	} else if t != nil {
 		if err := ts.InsertTrack(supabase.FipNouveautes{Track: *t}); err != nil {
-			logger.Get().Errorf("InsertTrack (found) %s: %s", genre, err)
+			slog.Error(fmt.Sprintf("InsertTrack (found) %s: %s", genre, err))
 			return
 		}
-		logger.Get().Infow("new track",
+		slog.Info("new track",
 			"genre", genre,
 			"query", q,
 			"name", t.Name,
@@ -455,35 +461,35 @@ func fipHipHop(c *spotify.ClientCredentials) {
 	genre := "fip_hiphop"
 	f, err := getFip(getEnvVar("FIP_API_BASE_URL"), genre)
 	if err != nil {
-		logger.Get().Errorf("get %s: %s", genre, err)
+		slog.Error(fmt.Sprintf("get %s: %s", genre, err))
 		return
 	}
 
-	if f.Now.FirstLine == "Le direct" {
+	if f.Now.FirstLine.Title == "Le direct" {
 		return
 	}
 
-	q := "track:" + f.Now.FirstLine
-	if f.Now.SecondLine != "" {
-		q += " artist:" + f.Now.SecondLine
+	q := "track:" + f.Now.FirstLine.Title
+	if f.Now.SecondLine.Title != "" {
+		q += " artist:" + f.Now.SecondLine.Title
 	}
-	name := fmt.Sprintf("%s %s", f.Now.FirstLine, f.Now.SecondLine)
+	name := fmt.Sprintf("%s %s", f.Now.FirstLine.Title, f.Now.SecondLine.Title)
 
 	ts, err := postgres.NewTrackStore[supabase.FipHipHop]()
 	if err != nil {
-		logger.Get().Errorf("NewTrackStore %s: %s", genre, err)
+		slog.Error(fmt.Sprintf("NewTrackStore %s: %s", genre, err))
 		return
 	}
 	t, err := getTrackToInsert[supabase.FipHipHop](c, ts, name, q, f)
 	if err != nil {
-		logger.Get().Errorf("getTrackToInsert %s: %s", genre, err)
+		slog.Error(fmt.Sprintf("getTrackToInsert %s: %s", genre, err))
 		return
 	} else if t != nil {
 		if err := ts.InsertTrack(supabase.FipHipHop{Track: *t}); err != nil {
-			logger.Get().Errorf("InsertTrack (found) %s: %s", genre, err)
+			slog.Error(fmt.Sprintf("InsertTrack (found) %s: %s", genre, err))
 			return
 		}
-		logger.Get().Infow("new track",
+		slog.Info("new track",
 			"genre", genre,
 			"query", q,
 			"name", t.Name,
@@ -496,35 +502,35 @@ func fipReggae(c *spotify.ClientCredentials) {
 	genre := "fip_reggae"
 	f, err := getFip(getEnvVar("FIP_API_BASE_URL"), genre)
 	if err != nil {
-		logger.Get().Errorf("get %s: %s", genre, err)
+		slog.Error(fmt.Sprintf("get %s: %s", genre, err))
 		return
 	}
 
-	if f.Now.FirstLine == "Le direct" {
+	if f.Now.FirstLine.Title == "Le direct" {
 		return
 	}
 
-	q := "track:" + f.Now.FirstLine
-	if f.Now.SecondLine != "" {
-		q += " artist:" + f.Now.SecondLine
+	q := "track:" + f.Now.FirstLine.Title
+	if f.Now.SecondLine.Title != "" {
+		q += " artist:" + f.Now.SecondLine.Title
 	}
-	name := fmt.Sprintf("%s %s", f.Now.FirstLine, f.Now.SecondLine)
+	name := fmt.Sprintf("%s %s", f.Now.FirstLine.Title, f.Now.SecondLine.Title)
 
 	ts, err := postgres.NewTrackStore[supabase.FipReggae]()
 	if err != nil {
-		logger.Get().Errorf("NewTrackStore %s: %s", genre, err)
+		slog.Error(fmt.Sprintf("NewTrackStore %s: %s", genre, err))
 		return
 	}
 	t, err := getTrackToInsert[supabase.FipReggae](c, ts, name, q, f)
 	if err != nil {
-		logger.Get().Errorf("getTrackToInsert %s: %s", genre, err)
+		slog.Error(fmt.Sprintf("getTrackToInsert %s: %s", genre, err))
 		return
 	} else if t != nil {
 		if err := ts.InsertTrack(supabase.FipReggae{Track: *t}); err != nil {
-			logger.Get().Errorf("InsertTrack (found) %s: %s", genre, err)
+			slog.Error(fmt.Sprintf("InsertTrack (found) %s: %s", genre, err))
 			return
 		}
-		logger.Get().Infow("new track",
+		slog.Info("new track",
 			"genre", genre,
 			"query", q,
 			"name", t.Name,
@@ -537,35 +543,35 @@ func fipRock(c *spotify.ClientCredentials) {
 	genre := "fip_rock"
 	f, err := getFip(getEnvVar("FIP_API_BASE_URL"), genre)
 	if err != nil {
-		logger.Get().Errorf("get %s: %s", genre, err)
+		slog.Error(fmt.Sprintf("get %s: %s", genre, err))
 		return
 	}
 
-	if f.Now.FirstLine == "Le direct" {
+	if f.Now.FirstLine.Title == "Le direct" {
 		return
 	}
 
-	q := "track:" + f.Now.FirstLine
-	if f.Now.SecondLine != "" {
-		q += " artist:" + f.Now.SecondLine
+	q := "track:" + f.Now.FirstLine.Title
+	if f.Now.SecondLine.Title != "" {
+		q += " artist:" + f.Now.SecondLine.Title
 	}
-	name := fmt.Sprintf("%s %s", f.Now.FirstLine, f.Now.SecondLine)
+	name := fmt.Sprintf("%s %s", f.Now.FirstLine.Title, f.Now.SecondLine.Title)
 
 	ts, err := postgres.NewTrackStore[supabase.FipRock]()
 	if err != nil {
-		logger.Get().Errorf("NewTrackStore %s: %s", genre, err)
+		slog.Error(fmt.Sprintf("NewTrackStore %s: %s", genre, err))
 		return
 	}
 	t, err := getTrackToInsert[supabase.FipRock](c, ts, name, q, f)
 	if err != nil {
-		logger.Get().Errorf("getTrackToInsert %s: %s", genre, err)
+		slog.Error(fmt.Sprintf("getTrackToInsert %s: %s", genre, err))
 		return
 	} else if t != nil {
 		if err := ts.InsertTrack(supabase.FipRock{Track: *t}); err != nil {
-			logger.Get().Errorf("InsertTrack (found) %s: %s", genre, err)
+			slog.Error(fmt.Sprintf("InsertTrack (found) %s: %s", genre, err))
 			return
 		}
-		logger.Get().Infow("new track",
+		slog.Info("new track",
 			"genre", genre,
 			"query", q,
 			"name", t.Name,
@@ -574,14 +580,16 @@ func fipRock(c *spotify.ClientCredentials) {
 	}
 }
 
-func getTrackToInsert[T any](c *spotify.ClientCredentials, ts storage.TrackStore[T], name, q string, f *fip.Fip) (*supabase.Track, error) {
+func getTrackToInsert[T any](
+	c *spotify.ClientCredentials, ts storage.TrackStore[T], name, q string, f *fip.Fip,
+) (*supabase.Track, error) {
 	lastTrack, err := ts.GetLastTrack()
 	if err != nil {
-		return nil, fmt.Errorf("GET Supabase last track: %s", err)
+		return nil, fmt.Errorf("GET Supabase last track: %w", err)
 	}
 
 	if lastTrack != nil && lastTrack.SpotifyID == "" && lastTrack.Name == name {
-		//current track %s already inserted without ID, name
+		// current track %s already inserted without ID, name
 		return nil, nil
 	}
 
@@ -597,7 +605,7 @@ func getTrackToInsert[T any](c *spotify.ClientCredentials, ts storage.TrackStore
 	resp, err := req.
 		Get("https://api.spotify.com/v1/search")
 	if err != nil {
-		return nil, fmt.Errorf("GET Spotify search: %s", err)
+		return nil, fmt.Errorf("GET Spotify search: %w", err)
 	}
 
 	if resp.IsError() {
@@ -613,7 +621,7 @@ func getTrackToInsert[T any](c *spotify.ClientCredentials, ts storage.TrackStore
 	}
 
 	if len(s.Tracks.Items) == 0 {
-		logger.Get().Infow("GET Spotify search: no results",
+		slog.Info("GET Spotify search: no results",
 			"query", q)
 		if lastTrack == nil ||
 			lastTrack != nil && lastTrack.Name != q {
@@ -627,7 +635,7 @@ func getTrackToInsert[T any](c *spotify.ClientCredentials, ts storage.TrackStore
 
 	spotifyTrack := s.Tracks.Items[0]
 	if lastTrack != nil && spotifyTrack.Name == lastTrack.Name {
-		//Spotify track %s (%s) already inserted, spotifyTrack.Name, spotifyTrack.ID
+		// Spotify track %s (%s) already inserted, spotifyTrack.Name, spotifyTrack.ID
 		return nil, nil
 	}
 
@@ -661,7 +669,7 @@ func getFip(fipAPIURL, genre string) (*fip.Fip, error) {
 		return nil, fmt.Errorf("invalid response: %+v", resp.Result())
 	}
 
-	if f.Now.FirstLine == "" {
+	if f.Now.FirstLine.Title == "" {
 		return nil, fmt.Errorf("invalid response: empty first line: %+v", f.Now)
 	}
 
@@ -697,9 +705,7 @@ func getSpotifyClientCredentials() (*spotify.ClientCredentials, error) {
 func getEnvVar(key string) string {
 	envVar := os.Getenv(key)
 	if envVar == "" {
-		err := "couldn't find env var " + key
-		logger.Get().Errorf(err)
-		panic(err)
+		panic("couldn't find env var " + key)
 	}
 	return envVar
 }

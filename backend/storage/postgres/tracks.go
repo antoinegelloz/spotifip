@@ -4,10 +4,9 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"github.com/antoinegelloz/spotifip/model/supabase"
 	"os"
 
-	"github.com/antoinegelloz/spotifip/logger"
+	"github.com/antoinegelloz/spotifip/model/supabase"
 	"github.com/antoinegelloz/spotifip/storage"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
@@ -52,7 +51,7 @@ func NewTrackStore[T any]() (storage.TrackStore[T], error) {
 
 func (s trackStore[T]) InsertTrack(track T) error {
 	if _, err := s.DB.NewInsert().Model(&track).Exec(context.Background()); err != nil {
-		return err
+		return fmt.Errorf("inserting track: %w", err)
 	}
 	return nil
 }
@@ -98,9 +97,7 @@ func (s trackStore[T]) Close() {
 func getEnvVar(key string) string {
 	envVar := os.Getenv(key)
 	if envVar == "" {
-		err := "couldn't find env var " + key
-		logger.Get().Errorf(err)
-		panic(err)
+		panic("couldn't find env var " + key)
 	}
 	return envVar
 }
